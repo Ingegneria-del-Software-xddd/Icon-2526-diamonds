@@ -1,4 +1,4 @@
-# ICON-25-26
+# ICON 25-26
 #### Esame di ingegneria della conoscenza, UniBa
 Realizzato da: ..., ..., ... 
 
@@ -33,11 +33,9 @@ Realizzato da: ..., ..., ...
 
 ***
 
-### 💻 Progetto
+## 💻 Progetto
 Questo progetto tratta di... 
-
 fa questo e questo...
-
 aaa
 
 immagini di esempio...
