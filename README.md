@@ -6,7 +6,7 @@ Realizzato da: ..., ..., ...
 
 ### ⚙ Setup iniziale dell'ambiente di lavoro:
 
-0. Requisiti: python 3.11.2
+0. Requisiti: python 3.12.3
 
 1. Clonare il repository eseguendo il seguente comando su terminale:  
     ```
