@@ -1,6 +1,5 @@
 # ICON 25-26
-#### Esame di ingegneria della conoscenza, UniBa
-Realizzato da: ..., ..., ... 
+#### Esame di ingegneria della conoscenza, UniBa, realizzato da: ..., ..., ... 
 
 ***
 
