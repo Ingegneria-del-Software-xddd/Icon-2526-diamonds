@@ -341,44 +341,67 @@ class CategoricalDataFrame(pd.DataFrame):
     # SEZIONE 5: PAIRPLOT DELLE VARIABILI PRINCIPALI (ADATTATO)
     # =============================================================================
     
-    # Per dati categoriali, usiamo pairplot con countplot invece di scatterplot
+    
         variabili_principali = ['carat', 'cut', 'color', 'clarity', target]
         variabili_presenti = [col for col in variabili_principali if col in self.columns]
-    
+
         if len(variabili_presenti) >= 2:
-        # Creiamo una griglia di countplot invece del pairplot tradizionale
+            # Creiamo una griglia di countplot invece del pairplot tradizionale
             n_vars = len(variabili_presenti)
-            fig, axes = plt.subplots(n_vars, n_vars, figsize=(15, 15))
-        
+            
+            # MODIFICA 1: Rimpiccioliamo notevolmente la figura
+            fig, axes = plt.subplots(n_vars, n_vars, figsize=(12, 12))
+            
+            # MODIFICA 2: Aumentiamo molto lo spazio tra i subplot
+            plt.subplots_adjust(wspace=0.5, hspace=0.5)
+            
             for i, var_row in enumerate(variabili_presenti):
                 for j, var_col in enumerate(variabili_presenti):
                     ax = axes[i, j]
-                
+                    
                     if i == j:
-                    # Diagonali: distribuzione singola variabile
+                        # Diagonali: distribuzione singola variabile
                         counts = self[var_row].value_counts().sort_index()
                         ax.bar(range(len(counts)), counts.values, color='skyblue', alpha=0.7)
-                        ax.set_title(f'Distribuzione {var_row}')
+                        
+                        # MODIFICA 3: Titolo più piccolo
+                        ax.set_title(f'Distribuzione {var_row}', fontsize=9, pad=8)
                         ax.set_xticks(range(len(counts)))
-                        ax.set_xticklabels(counts.index, rotation=45)
+                        
+                        # MODIFICA 4: Etichette X più piccole e con rotazione più accentuata
+                        ax.set_xticklabels(counts.index, rotation=60, ha='right', fontsize=7)
+                        
+                        # MODIFICA 5: Etichette Y più piccole
+                        ax.tick_params(axis='y', labelsize=7)
+                    
                     else:
-                    # Non-diagonali: heatmap delle frequenze incrociate
+                        # Non-diagonali: heatmap delle frequenze incrociate
                         cross_tab = pd.crosstab(self[var_row], self[var_col])
                         im = ax.imshow(cross_tab.values, cmap='YlOrRd', aspect='auto')
-                        ax.set_title(f'{var_row} vs {var_col}')
+                        
+                        # MODIFICA 6: Titolo più piccolo per heatmap
+                        ax.set_title(f'{var_row} vs {var_col}', fontsize=8, pad=6)
                         ax.set_xticks(range(len(cross_tab.columns)))
-                        ax.set_xticklabels(cross_tab.columns, rotation=45)
+                        
+                        # MODIFICA 7: Etichette molto più piccole per heatmap
+                        ax.set_xticklabels(cross_tab.columns, rotation=60, ha='right', fontsize=6)
                         ax.set_yticks(range(len(cross_tab.index)))
-                        ax.set_yticklabels(cross_tab.index)
-                    
-                    # Aggiungi annotazioni solo per tabelle piccole
-                        if cross_tab.shape[0] <= 5 and cross_tab.shape[1] <= 5:
+                        ax.set_yticklabels(cross_tab.index, fontsize=6)
+                        
+                        # MODIFICA 8: Annotazioni più piccole o rimosse per tabelle grandi
+                        if cross_tab.shape[0] <= 4 and cross_tab.shape[1] <= 4:
                             for ii in range(len(cross_tab.index)):
                                 for jj in range(len(cross_tab.columns)):
                                     ax.text(jj, ii, f'{cross_tab.iloc[ii, jj]}', 
-                                    ha="center", va="center", color="black", fontsize=8)
-        
-            plt.suptitle("Matrice di Distribuzioni e Associazioni", fontsize=16)
+                                        ha="center", va="center", color="black", fontsize=6)
+                        # MODIFICA 9: Per tabelle più grandi, visualizza solo i valori alti
+                        elif cross_tab.shape[0] <= 6 and cross_tab.shape[1] <= 6:
+                            for ii in range(len(cross_tab.index)):
+                                for jj in range(len(cross_tab.columns)):
+                                    if cross_tab.iloc[ii, jj] != 0:  # Solo valori non zero
+                                        ax.text(jj, ii, f'{cross_tab.iloc[ii, jj]}', 
+                                            ha="center", va="center", color="black", fontsize=5)
+
             plt.tight_layout()
             plt.show()
 
@@ -769,11 +792,6 @@ class CategoricalDataFrame(pd.DataFrame):
     
     
     
-
-
-
-
-
 
 
 
