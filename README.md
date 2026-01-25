@@ -9,7 +9,7 @@
 
 1. Clonare il repository eseguendo il seguente comando su terminale:  
     ```
-    git clone https://github.com/nbellomo506/Icon-2425
+    git clone https://github.com/Ingegneria-del-Software-xddd/test-icon
     ```
 
 1. Crere e attivare un nuovo ambiente virtuale
