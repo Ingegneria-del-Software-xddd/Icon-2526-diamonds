@@ -11,15 +11,15 @@
 ### ⚙ Setup iniziale dell'ambiente di lavoro:
 
 0. Requisiti iniziali:
+- python 3.12.3
+- prolog 10.0.0-1
 
-    Il progetto è stato creato sulla base del linguaggio di programmazione Python, quindi si raccomanda di installare la versione python 3.12.3, inoltre servirà anche un linguaggio di programmazione per la visione delle immagini, pertanto si raccomanda anche l'installazione di prolog 10.0.0-1
-
-3. Clonare il repository eseguendo il seguente comando su terminale:  
+1. Clonare il repository eseguendo il seguente comando su terminale:  
     ```
     git clone https://github.com/Ingegneria-del-Software-xddd/test-icon
     ```
 
-4. Creare e attivare un nuovo ambiente virtuale
+2. Creare e attivare un nuovo ambiente virtuale
     ```py
     py -3.11 -m venv venv
     ```
@@ -27,16 +27,16 @@
     venv\Scripts\activate
     ```
 
-5. Installare dipendenze (in seguito sostituito con pip install -r requirements.txt)
+3. Installare dipendenze (in seguito sostituito con pip install -r requirements.txt)
     ```py
     pip install pandas numpy scikit-learn matplotlib seaborn scipy pyswip joblib
     ```
 
-6. Avviare il programma
+4. Avviare il programma
     ```py
     python kb\ui.py
     ```
-   Il progetto si configura come un sistema di Business Intelligence e Machine Learning dedicato alla classificazione del valore commerciale dei diamanti. L'obiettivo principale è comprendere quali caratteristiche fisiche e qualitative influenzino il prezzo (suddiviso nelle classi high, medium, low) e costruire un modello predittivo affidabile.
+Il progetto si configura come un sistema di Business Intelligence e Machine Learning dedicato alla classificazione del valore commerciale dei diamanti. L'obiettivo principale è comprendere quali caratteristiche fisiche e qualitative influenzino il prezzo (suddiviso nelle classi high, medium, low) e costruire un modello predittivo affidabile.
 
 ### Punti Chiave dell'Analisi:
 1. Analisi Correlativa: Utilizzando l'indice Cramér's V (Figure 2), il progetto identifica che il fattore più determinante per il prezzo è la caratura (carat, associazione 0.68), seguita dalle dimensioni fisiche (x, y, z).
