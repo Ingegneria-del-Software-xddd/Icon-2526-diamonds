@@ -1,7 +1,12 @@
 # ICON 25-26
-#### Esame di ingegneria della conoscenza, UniBa, realizzato da: ..., ..., ... 
+#### Esame di ingegneria della conoscenza, UniBa, realizzato da: 
 
-***
+- Stefano Cici, 796648, s.cici2@studenti.uniba.it
+
+- Antonio Bolsi 759125, a.bolsi@studenti.uniba.it
+
+- Roberto Barracano, 799467, r.barracano1@studenti.uniba.it
+
 
 ### ⚙ Setup iniziale dell'ambiente di lavoro:
 
@@ -32,10 +37,6 @@
 
 ***
 
-## 💻 Progetto
-Questo progetto tratta di... 
-fa questo e questo...
-aaa
-
-immagini di esempio...
+## Sommario
+Aggiungere tutte le voci elaborate nel progetto
 
