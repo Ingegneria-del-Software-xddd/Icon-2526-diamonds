@@ -23,6 +23,9 @@
     ```
     git clone https://github.com/Ingegneria-del-Software-xddd/test-icon
     ```
+    ```
+    cd test-icon
+    ```
 
 2. Creare e attivare un nuovo ambiente virtuale
     ```py
