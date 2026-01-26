@@ -55,7 +55,7 @@ Tutte queste informazioni verranno salvate in una sottocartella chiamata test_ou
    5.   uscita dal sistema
 
 
-<img align="right" src="Immagini/Screenshot%20men%C3%B9%20principale" width=400>
+<img align="right" src="Immagini/Screenshot_menu_principale" width=400>
 ***
 
 ## Esecuzione del progetto
