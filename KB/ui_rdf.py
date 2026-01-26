@@ -6,7 +6,23 @@ from threshold_system import ExtendedKB, MiniKB, BeautyLevel, Threshold
 import os
 import pandas as pd
 
+from rdf_exporter import (  # Importa le funzioni dall'RDF exporter
+    kb_to_rdf,
+    save_kb_to_rdf,
+    load_kb_from_rdf,
+    generate_diamond_rdf_report,
+    query_rdf_kb,
+    SPARQL_QUERIES,
+    export_kb_with_ml_integration
+)
+import os
+import pandas as pd
+
+# Variabile globale per salvare l'ultimo diamante testato
 last_tested_diamond = None
+
+
+
 
 
 def prevision_menu():
@@ -143,8 +159,8 @@ def prevision_menu():
             print("="*60)
             
             # Prima dobbiamo avere un DataFrame
-            print("\nCaricamento dati dei diamanti...")
-            df = CategoricalDataFrame()
+            #print("\nCaricamento dati dei diamanti...")
+            #df = CategoricalDataFrame()
             
             # Chiedi quanti diamanti generare
             while True:
@@ -192,7 +208,7 @@ def prevision_menu():
                 print("-"*40)
                 
                 # Genera diamante casuale
-                diamond = random_diamond(df, f"diamante_random_{i+1}.json")
+                diamond = random_diamond(f"test_output/diamante_random_{i+1}.json")
                 
                 # Mostra caratteristiche
                 print("Caratteristiche:")
@@ -233,7 +249,7 @@ def prevision_menu():
             print("CARICA DIAMANTE DA FILE JSON".center(60))
             print("="*60)
             
-            file_path = input("\nInserisci il percorso del file JSON: ").strip()
+            file_path = input("\nInserisci il nome del file JSON: ").strip()
             
             if os.path.exists(file_path):
                 try:
@@ -284,11 +300,11 @@ def prevision_menu():
         elif choice == "salva":  # Salva ultimo diamante testato
             
             if last_tested_diamond is not None:
-                filename = input("\nNome del file per salvare (senza estensione): ").strip()
+                filename = input("\nNome del file da salvare (senza estensione): ").strip()
                 if not filename:
                     filename = "diamante_salvato"
                 
-                filename += ".json"
+                filename = "test_output/" + filename + ".json"
                 
                 try:
                     with open(filename, 'w', encoding='utf-8') as f:
@@ -439,11 +455,11 @@ def threshold_menu():
             print("="*60)
             
             # Carica dati per generare diamante
-            print("\nCaricamento dati dei diamanti...")
-            df = CategoricalDataFrame()
+            #print("\nCaricamento dati dei diamanti...")
+            #df = CategoricalDataFrame()
             
             # Genera diamante
-            diamond = random_diamond(df, "diamante_valutazione.json")
+            diamond = random_diamond("test_output/diamante_valutazione.json")
             
             print("\nDIAMANTE GENERATO:")
             print("-"*40)
@@ -661,6 +677,429 @@ def threshold_menu():
             print("\nERRORE: Scelta non valida. Riprova.")
 
 
+
+
+
+
+
+def rdf_exporter_menu():
+    """
+    Menu per l'esportazione e gestione RDF della Knowledge Base.
+    Permette di esportare in formato semantico e eseguire query SPARQL.
+    """
+    
+    # Carica la knowledge base
+    print("\nCaricamento knowledge base per esportazione RDF...")
+    try:
+        kb = ExtendedKB()
+        kb.load_from_json()
+        print("SUCCESSO: Knowledge base caricata")
+    except Exception as e:
+        print(f"NOTA: Creazione nuova knowledge base ({e})")
+        kb = ExtendedKB()
+    
+    while True:
+        
+        print("\n" + "="*60)
+        print("MENU ESPORTAZIONE RDF - CONOSCENZA SEMANTICA".center(60))
+        print("="*60)
+        print("\nCosa vuoi fare?")
+        print("1) Esportare la Knowledge Base in formato RDF/Turtle")
+        print("2) Caricare una Knowledge Base da file RDF")
+        print("3) Generare report RDF per un diamante specifico")
+        print("4) Eseguire query SPARQL sulla KB")
+        print("5) Esportare KB integrata con modello ML")
+        print("6) Visualizzare statistiche della KB RDF")
+        print("\n'esc' - Torna al menu principale")
+        print("\n" + "-"*60)
+        
+        choice = input(">>\t").strip().lower()
+        
+        if choice == "1":  # Esporta KB in RDF
+            
+            print("\n" + "="*60)
+            print("ESPORTAZIONE KNOWLEDGE BASE IN RDF".center(60))
+            print("="*60)
+            
+            # Chiedi nome file
+            default_name = "diamonds_kb.ttl"
+            filename = input(f"\nNome file di output [{default_name}]: ").strip()
+            if not filename:
+                filename = default_name
+            
+            # Assicurati estensione .ttl
+            if not filename.endswith('.ttl'):
+                filename += '.ttl'
+            
+            # Percorso completo
+            output_path = os.path.join("test_output", filename)
+            
+            try:
+                # Esporta la KB
+                result_path = save_kb_to_rdf(kb, output_path)
+                
+                print(f"\nSUCCESSO: Knowledge Base esportata!")
+                print(f"File generato: {result_path}")
+                
+                # Mostra statistiche
+                from rdflib import Graph
+                g = Graph()
+                g.parse(result_path, format="turtle")
+                print(f"Numero di triple RDF: {len(g)}")
+                
+                # Mostra namespace
+                print("\nNamespace utilizzati:")
+                for prefix, namespace in list(g.namespaces())[:5]:
+                    print(f"  {prefix}: {namespace}")
+                
+                # Genera anteprima
+                print("\nAnteprima del file:")
+                with open(result_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()[:20]
+                    for line in lines:
+                        print(f"  {line.rstrip()}")
+                
+                if len(lines) >= 20:
+                    print("  ... [file più lungo]")
+                    
+            except Exception as e:
+                print(f"\nERRORE durante l'esportazione: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        
+        elif choice == "2":  # Carica KB da RDF
+            
+            print("\n" + "="*60)
+            print("CARICA KNOWLEDGE BASE DA RDF".center(60))
+            print("="*60)
+            
+            # Chiedi file
+            print("\nFile disponibili in test_output/:")
+            try:
+                files = [f for f in os.listdir("test_output") if f.endswith('.ttl')]
+                for i, f in enumerate(files, 1):
+                    print(f"  {i}) {f}")
+            except:
+                files = []
+            
+            if files:
+                file_choice = input("\nNumero del file o percorso completo: ").strip()
+                
+                try:
+                    # Se è un numero, usa l'elenco
+                    if file_choice.isdigit():
+                        idx = int(file_choice) - 1
+                        if 0 <= idx < len(files):
+                            rdf_path = os.path.join("test_output", files[idx])
+                        else:
+                            print("Numero non valido")
+                            continue
+                    else:
+                        rdf_path = file_choice
+                    
+                    # Carica la KB
+                    print(f"\nCaricamento da: {rdf_path}")
+                    loaded_kb = load_kb_from_rdf(rdf_path)
+                    
+                    print("\nSUCCESSO: Knowledge Base caricata da RDF!")
+                    print(f"Soglie caricate: {len(loaded_kb._store)}")
+                    print(f"Regole composite: {len(loaded_kb.composite_rules)}")
+                    
+                    # Sostituisci la KB corrente
+                    kb = loaded_kb
+                    
+                    # Mostra anteprima regole
+                    if len(kb._store) > 0:
+                        print("\nPrime 3 regole caricate:")
+                        for i, (pos, thr) in enumerate(list(kb._store.items())[:3], 1):
+                            print(f"  {i}. {thr.feature} {thr.operator} {thr.value}")
+                    
+                except Exception as e:
+                    print(f"\nERRORE nel caricamento: {e}")
+            else:
+                print("\nNessun file RDF trovato nella cartella test_output/")
+        
+        
+        elif choice == "3":  # Report RDF per diamante
+            
+            print("\n" + "="*60)
+            print("REPORT RDF PER DIAMANTE".center(60))
+            print("="*60)
+            
+            print("\nScegli come ottenere il diamante:")
+            print("1) Inserire manualmente")
+            print("2) Generare casualmente")
+            print("3) Usare ultimo diamante testato")
+            
+            diamond_choice = input("\nScelta (1-3): ").strip()
+            diamond = None
+            
+            if diamond_choice == "1":
+                # Inserimento manuale
+                diamond = {}
+                features = ['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z']
+                
+                print("\nInserisci le caratteristiche:")
+                for feature in features:
+                    value = input(f"{feature}: ").strip().lower()
+                    if value:
+                        diamond[feature] = value
+                    else:
+                        diamond[feature] = "medium"  # default
+                        
+            elif diamond_choice == "2":
+                # Genera casuale
+                diamond = random_diamond("test_output/diamond_rdf_temp.json")
+                print("\nDiamante generato casualmente")
+                
+            elif diamond_choice == "3":
+                # Usa ultimo testato
+                if last_tested_diamond:
+                    diamond = last_tested_diamond['diamond']
+                    print("\nUsando ultimo diamante testato")
+                else:
+                    print("\nNessun diamante testato disponibile")
+                    continue
+            else:
+                print("Scelta non valida")
+                continue
+            
+            if diamond:
+                # Chiedi nome file
+                filename = input("\nNome file report [diamond_report.ttl]: ").strip()
+                if not filename:
+                    filename = "diamond_report.ttl"
+                
+                if not filename.endswith('.ttl'):
+                    filename += '.ttl'
+                
+                output_path = os.path.join("test_output", filename)
+                
+                try:
+                    # Genera report
+                    result_path = generate_diamond_rdf_report(diamond, kb, output_path)
+                    
+                    print(f"\nSUCCESSO: Report RDF generato!")
+                    print(f"File: {result_path}")
+                    
+                    # Mostra fuzzy score calcolato
+                    fuzzy_score = kb.fuzzy_beauty_score(diamond)
+                    print(f"Fuzzy score del diamante: {fuzzy_score:.3f}")
+                    
+                    # Anteprima
+                    print("\nAnteprima report:")
+                    with open(result_path, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()[:15]
+                        for line in lines:
+                            print(f"  {line.rstrip()}")
+                            
+                except Exception as e:
+                    print(f"\nERRORE nella generazione report: {e}")
+        
+        
+        elif choice == "4":  # Query SPARQL
+            
+            print("\n" + "="*60)
+            print("QUERY SPARQL SULLA KNOWLEDGE BASE".center(60))
+            print("="*60)
+            
+            # Prima esporta la KB in un file temporaneo
+            temp_file = "test_output/kb_temp_query.ttl"
+            save_kb_to_rdf(kb, temp_file)
+            
+            print("\nQuery predefinite disponibili:")
+            for i, (name, query) in enumerate(SPARQL_QUERIES.items(), 1):
+                print(f"  {i}) {name}")
+            
+            print("  c) Query personalizzata")
+            
+            query_choice = input("\nScelta: ").strip().lower()
+            sparql_query = ""
+            
+            if query_choice == "c":
+                print("\nInserisci la tua query SPARQL (termina con linea vuota):")
+                lines = []
+                while True:
+                    line = input("SPARQL> ")
+                    if not line:
+                        break
+                    lines.append(line)
+                sparql_query = "\n".join(lines)
+            elif query_choice.isdigit():
+                idx = int(query_choice) - 1
+                query_names = list(SPARQL_QUERIES.keys())
+                if 0 <= idx < len(query_names):
+                    query_name = query_names[idx]
+                    sparql_query = SPARQL_QUERIES[query_name]
+                    print(f"\nQuery: {query_name}")
+                else:
+                    print("Numero non valido")
+                    continue
+            else:
+                print("Scelta non valida")
+                continue
+            
+            if sparql_query:
+                try:
+                    print("\nEsecuzione query...")
+                    results = query_rdf_kb(temp_file, sparql_query)
+                    
+                    print(f"\nRISULTATI: {len(results)} righe trovate")
+                    print("-"*60)
+                    
+                    if results:
+                        # Mostra le prime 5 righe
+                        for i, row in enumerate(results[:5], 1):
+                            print(f"\nRiga {i}:")
+                            for key, value in row.items():
+                                print(f"  {key}: {value}")
+                        
+                        if len(results) > 5:
+                            print(f"\n... e altre {len(results) - 5} righe")
+                            
+                        # Opzione per salvare i risultati
+                        save_res = input("\nSalvare i risultati in JSON? (s/n): ").strip().lower()
+                        if save_res == 's':
+                            json_file = input("Nome file [query_results.json]: ").strip()
+                            if not json_file:
+                                json_file = "query_results.json"
+                            
+                            output_path = os.path.join("test_output", json_file)
+                            with open(output_path, 'w', encoding='utf-8') as f:
+                                json.dump(results, f, indent=2, ensure_ascii=False)
+                            print(f"Risultati salvati in: {output_path}")
+                            
+                    else:
+                        print("Nessun risultato trovato")
+                        
+                except Exception as e:
+                    print(f"\nERRORE nell'esecuzione query: {e}")
+            
+            # Pulisci file temporaneo
+            try:
+                os.remove(temp_file)
+            except:
+                pass
+        
+        
+        elif choice == "5":  # KB integrata con ML
+            
+            print("\n" + "="*60)
+            print("ESPORTAZIONE INTEGRATA ML + KB".center(60))
+            print("="*60)
+            
+            # Informazioni del modello ML
+            model_info = {}
+            
+            print("\nInserisci informazioni del modello ML:")
+            model_info['name'] = input("Nome modello [RandomForest]: ").strip() or "RandomForest"
+            model_info['description'] = input("Descrizione: ").strip() or "Modello Random Forest per classificazione diamanti"
+            
+            # Carica features dal modello esistente se disponibile
+            try:
+                from prediction import load_payload
+                payload = load_payload()
+                if 'features' in payload:
+                    model_info['features'] = payload['features']
+                    print(f"Features caricate automaticamente: {len(model_info['features'])}")
+                else:
+                    # Chiedi manualmente
+                    features_str = input("Features (separate da virgola): ").strip()
+                    model_info['features'] = [f.strip() for f in features_str.split(',')] if features_str else []
+            except:
+                features_str = input("Features (separate da virgola): ").strip()
+                model_info['features'] = [f.strip() for f in features_str.split(',')] if features_str else []
+            
+            # Accuracy se disponibile
+            try:
+                from preprocessing import CategoricalDataFrame
+                df = CategoricalDataFrame()
+                metrics = df.evaluate_model_performance(plot_confusion_matrix=False)
+                model_info['accuracy'] = metrics.get('accuracy', 0.0)
+                print(f"Accuracy rilevata: {model_info['accuracy']:.3f}")
+            except:
+                acc_input = input("Accuracy modello (0.0-1.0) [0.85]: ").strip()
+                model_info['accuracy'] = float(acc_input) if acc_input else 0.85
+            
+            # Base nome file
+            base_name = input("\nBase nome file [diamonds_ai_system]: ").strip() or "diamonds_ai_system"
+            
+            try:
+                # Esporta integrata
+                files = export_kb_with_ml_integration(kb, model_info, base_name)
+                
+                print("\nSUCCESSO: Sistema integrato esportato!")
+                for key, path in files.items():
+                    print(f"  {key}: {path}")
+                    
+            except Exception as e:
+                print(f"\nERRORE nell'esportazione integrata: {e}")
+        
+        
+        elif choice == "6":  # Statistiche KB RDF
+            
+            print("\n" + "="*60)
+            print("STATISTICHE KNOWLEDGE BASE RDF".center(60))
+            print("="*60)
+            
+            # Esporta in temporaneo per analisi
+            temp_file = "test_output/kb_stats_temp.ttl"
+            save_kb_to_rdf(kb, temp_file)
+            
+            try:
+                from rdflib import Graph
+                g = Graph()
+                g.parse(temp_file, format="turtle")
+                
+                print(f"\nStatistiche della Knowledge Base:")
+                print(f"Triple totali: {len(g)}")
+                print(f"Namespace definiti: {len(list(g.namespaces()))}")
+                print(f"Soglie nella KB: {len(kb._store)}")
+                print(f"Regole composite: {len(kb.composite_rules)}")
+                
+                # Conta tipi di triple
+                subject_counts = {}
+                for s, p, o in g:
+                    pred_name = str(p).split('#')[-1] if '#' in str(p) else str(p)
+                    subject_counts[pred_name] = subject_counts.get(pred_name, 0) + 1
+                
+                print("\nTriple per predicato (top 10):")
+                sorted_preds = sorted(subject_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+                for pred, count in sorted_preds:
+                    print(f"  {pred}: {count}")
+                
+                # Query per features
+                query = """
+                PREFIX ex: <http://example.org/diamonds#>
+                SELECT (COUNT(?feature) as ?count)
+                WHERE {
+                    ?feature a ex:DiamondFeature .
+                }
+                """
+                results = query_rdf_kb(temp_file, query)
+                if results and 'count' in results[0]:
+                    print(f"\nFeatures definite in RDF: {results[0]['count']}")
+                
+            except Exception as e:
+                print(f"\nERRORE nell'analisi: {e}")
+            
+            # Pulisci
+            try:
+                os.remove(temp_file)
+            except:
+                pass
+        
+        
+        elif choice == "esc":  # Torna al menu principale
+        
+            print("\nTorno al menu principale...")
+            break
+        
+        else:
+            print("\nERRORE: Scelta non valida. Riprova.")
+
+
 def ui():
     """
     Menu principale del programma.
@@ -674,6 +1113,7 @@ def ui():
     print("\nQuesto sistema permette di:")
     print("   1) Prevedere il prezzo di un diamante usando AI")
     print("   2) Valutare la qualità di un diamante con regole esperte")
+    print("   3) Esportare conoscenza in formato semantico (RDF)")
     
     print("\n" + "-"*70)
     print("INIZIALIZZAZIONE DEL MODELLO DI APPRENDIMENTO".center(70))
@@ -692,7 +1132,7 @@ def ui():
         print("\n" + "="*60)
         print("MENU PRINCIPALE".center(60))
         print("="*60)
-        print("\nCosa vuoi fare?\n")
+        print("\nCosa vuoi fare?")
         print("1) TESTARE LA PREVISIONE AI")
         print("   • Inserisci o genera diamanti")
         print("   • Ottieni previsioni di prezzo (low/medium/high)")
@@ -703,21 +1143,31 @@ def ui():
         print("   • Gestisci regole di valutazione")
         print("   • Aggiungi nuove regole esperte")
         
-        print("\n3) ADDESTRARE IL MODELLO AI")
+        print("\n3) ESPORTAZIONE RDF - CONOSCENZA SEMANTICA")
+        print("   • Esporta regole in formato RDF/Turtle")
+        print("   • Esegui query SPARQL sulla knowledge base")
+        print("   • Genera report semantici per diamanti")
+        
+        print("\n4) ADDESTRARE IL MODELLO AI")
         print("   • Rigenera il modello con i dati attuali")
         print("   • Ottieni nuove metriche di performance")
         
-        print("\n4) INFORMAZIONI SUL SISTEMA")
-        print("\n5) ESCI")
+        print("\n5) ANALISI ESPLORATIVA DEI DATI")
+        
+        print("\n6) VERIFICA PRESTAZIONI DEL SISTEMA DI APPRENDIMENTO")
+        
+        print("\n7) ESCI")
         print("\n" + "-"*60)
         
-        choice = input("\nSeleziona un'opzione (1-5): ").strip()
+        choice = input("\nSeleziona un'opzione (1-7): ").strip()
         
         if choice == "1":
             prevision_menu()
         elif choice == "2":
             threshold_menu()
         elif choice == "3":
+            rdf_exporter_menu()
+        elif choice == "4":
             print("\n" + "="*60)
             print("ADDESTRAMENTO MODELLO AI".center(60))
             print("="*60)
@@ -729,36 +1179,22 @@ def ui():
                 print("\nSUCCESSO: Modello addestrato e salvato!")
             else:
                 print("\nAddestramento annullato")
-        elif choice == "4":
-            print("\n" + "="*60)
-            print("INFORMAZIONI SUL SISTEMA".center(60))
-            print("="*60)
-            print("\nCARATTERISTICHE:")
-            print("   • Sistema di predizione prezzi diamanti")
-            print("   • Classificazione: low / medium / high")
-            print("   • Algoritmo: Random Forest calibrato")
-            print("   • Dati: Conversione da Prolog a categorie")
-            
-            print("\nFUNZIONALITÀ:")
-            print("   • Predizione con probabilità")
-            print("   • Valutazione qualità con regole fuzzy")
-            print("   • Generazione diamanti realistici")
-            print("   • Gestione knowledge base")
-            
-            print("\nFILE PRINCIPALI:")
-            print("   • preprocessing.py - Caricamento e preparazione dati")
-            print("   • prediction.py    - Funzioni di predizione")
-            print("   • random_diamond.py- Generazione diamanti casuali")
-            print("   • threshold_system.py- Regole di valutazione")
-            
-            input("\nPremi Invio per continuare...")
         elif choice == "5":
+            df.eda()
+            input("\nPremi Invio per continuare...")
+        elif choice == "6":
+            df.plot_learning_curve_single_run()
+            df.evaluate_model_performance()
+            input("\nPremi Invio per continuare...")
+        elif choice == "7":
             print("\n" + "="*60)
             print("GRAZIE PER AVER USATO IL SISTEMA!".center(60))
             print("="*60)
             break
         else:
-            print("\nERRORE: Scelta non valida. Inserisci un numero da 1 a 5.")
+            print("\nERRORE: Scelta non valida. Inserisci un numero da 1 a 7.")
 
+
+# Esegui il menu principale se il file viene eseguito direttamente
 if __name__ == "__main__":
     ui()
