@@ -39,7 +39,10 @@
 
 4. Avviare il programma
     ```py
-    python kb\ui.py
+    cd code/
+    ```
+    ```py
+    python kb/ui.py
     ```
 
 ***
