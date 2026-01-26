@@ -37,6 +37,6 @@
 
 ***
 
-## Sommario
-Aggiungere tutte le voci elaborate nel progetto
+## Esecuzione del progetto
+Aggiungere tutti i comandi che serviranno per le operazioni avviabili
 
