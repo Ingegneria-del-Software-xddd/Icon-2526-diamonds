@@ -35,7 +35,7 @@ def prevision_menu():
     global last_tested_diamond
     
     while True:
-        
+
         print("\n" + "="*60)
         print("MENU PREVISIONI - TEST DEL MODELLO AI".center(60))
         print("="*60)
@@ -675,11 +675,6 @@ def threshold_menu():
         
         else:
             print("\nERRORE: Scelta non valida. Riprova.")
-
-
-
-
-
 
 
 def rdf_exporter_menu():

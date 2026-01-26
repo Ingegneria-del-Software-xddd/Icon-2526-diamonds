@@ -27,7 +27,7 @@
 
 4. Avviare il programma
     ```py
-    python kb\ui.py
+    python kb\ui_rdf.py
     ```
 
 ***
