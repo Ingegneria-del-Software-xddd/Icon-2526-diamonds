@@ -42,7 +42,7 @@
     cd code/
     ```
     ```py
-    python kb/ui.py
+    python kb/ui_rdf.py
     ```
 
 ***

@@ -7,7 +7,7 @@ import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pyswip import Prolog
-from config import PROLOG_FILE, CATEGORICAL_CSV, TARGET_COL, PREPROCESSED_CSV, MODEL_PATH, CV_SPLITS 
+from config import PROLOG_FILE, CATEGORICAL_CSV, TARGET_COL,MODEL_PATH, CV_SPLITS 
 from scipy.stats import chi2_contingency
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 from sklearn.impute import SimpleImputer
@@ -42,141 +42,28 @@ from sklearn.metrics import (
 
 
 
-
-
-def metrics_at(y_true: np.ndarray, y_pred_proba: np.ndarray, thr: Optional[float] = None) -> dict:
-    """
-    Calcola metriche di valutazione per modelli di classificazione,
-    supportando sia problemi multiclasse che binari.
-    
-    Args:
-        y_true: Array NumPy con le etichette vere (ground truth)
-                - Per multiclasse: valori interi 0, 1, 2, ...
-                - Per binaria: valori 0 o 1
-                
-        y_pred_proba: Array NumPy con le probabilità predette
-                      - Per multiclasse: forma (n_samples, n_classes)
-                        probabilità per ciascuna classe
-                      - Per binaria: forma (n_samples,)
-                        probabilità della classe positiva
-                        
-        thr: Soglia di decisione (threshold)
-             - Se None: usa strategia argmax (per multiclasse)
-             - Se float: usa soglia per binarizzazione (per binaria)
-    
-    Returns:
-        dict: Dizionario con 5 metriche di valutazione
-    """
-    
-    # =========================================================================
-    # FASE 1: ANALISI INIZIALE DEL PROBLEMA
-    # =========================================================================
-    
-    # Conta il numero di classi uniche nelle etichette vere
-    # Questo aiuta a capire se siamo in un contesto multiclasse (>2 classi)
-    # o binario (2 classi: 0 e 1)
-    n_classes = len(np.unique(y_true))
-    
-    # =========================================================================
-    # FASE 2: GESTIONE DEGLI SCENARI POTENZIALMENTE PROBLEMATICI
-    # =========================================================================
-    
-    # CONTROLLO 1: Verifica coerenza tra numero di classi e uso della soglia
-    # Se abbiamo più di 2 classi ma viene specificata una soglia (thr),
-    # potremmo essere in uno scenario logicamente problematico:
-    # - Le soglie hanno senso principalmente in contesto binario
-    # - Per multiclasse, la decisione tipica è via argmax
-    if n_classes > 2 and thr is not None:
-        # Avvertimento informativo per l'utente
-        print(f"ATTENZIONE: y_true ha {n_classes} classi ma stai usando soglia={thr}")
-        print("Considera di usare thr=None per decisione argmax")
-    
-    # =========================================================================
-    # FASE 3: DECISIONE DELLE PREDIZIONI FINALI
-    # =========================================================================
-    
-    if thr is None:
-        # SCENARIO MULTICLASSE: Decisione tramite probabilità massima
-        # ------------------------------------------------------------
-        
-        # CONTROLLO 2: Verifica dimensionalità dell'input
-        # Per argmax, ci aspettiamo una matrice 2D:
-        # - righe: campioni
-        # - colonne: probabilità per ciascuna classe
-        if y_pred_proba.ndim == 1:
-            # Se riceviamo un array 1D invece di 2D, solleviamo un errore
-            # perché non possiamo applicare argmax su una singola dimensione
-            raise ValueError("Per thr=None serve y_pred_proba 2D (n_samples, n_classes)")
-        
-        # Applica argmax lungo l'asse delle colonne (axis=1)
-        # Per ogni campione, seleziona l'indice della classe con probabilità più alta
-        y_pred = np.argmax(y_pred_proba, axis=1)
-        
-    else:
-        # SCENARIO BINARIO (o pseudo-binario): Decisione tramite soglia
-        # --------------------------------------------------------------
-        
-        # CONTROLLO 3: Gestione array multidimensionali
-        # Se riceviamo una matrice 2D invece di un array 1D,
-        # dobbiamo estrarre le probabilità della classe positiva
-        if y_pred_proba.ndim != 1:
-            # Avvertimento informativo
-            print("ATTENZIONE: Con thr specificato, usando solo prima colonna di y_pred_proba")
-            
-            # Strategia di estrazione:
-            # - Se ci sono più colonne (>1): prendi la seconda colonna (indice 1)
-            #   (tipicamente contiene le probabilità della classe positiva)
-            # - Se c'è una sola colonna: prendi quella (indice 0)
-            y_pred_proba = y_pred_proba[:, 1] if y_pred_proba.shape[1] > 1 else y_pred_proba[:, 0]
-        
-        # Applica la soglia: probabilità >= soglia → classe 1, altrimenti classe 0
-        y_pred = (y_pred_proba >= thr).astype(int)
-    
-    # =========================================================================
-    # FASE 4: CALCOLO DELLE METRICHE DI VALUTAZIONE
-    # =========================================================================
-    
-    # Tutte le metriche sono calcolate con 'weighted' average per gestire
-    # eventuali squilibri tra le classi, e con zero_division=0 per evitare
-    # errori quando una classe non ha esempi nel set di valutazione.
-    
-    return {
-        # F1-score pesato: media armonica di precision e recall,
-        # pesata per il supporto di ciascuna classe
-        "F1_weighted": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
-        
-        # F1-score macro: media semplice delle F1 delle singole classi
-        "F1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
-        
-        # Accuratezza: percentuale di predizioni corrette
-        "Accuracy": float(accuracy_score(y_true, y_pred)),
-        
-        # Precision pesata: capacità di non etichettare come positivi i negativi
-        "Precision_weighted": float(precision_score(y_true, y_pred, average="weighted", zero_division=0)),
-        
-        # Recall pesato: capacità di trovare tutti i positivi
-        "Recall_weighted": float(recall_score(y_true, y_pred, average="weighted", zero_division=0)),
-    }
-
-
 class CategoricalDataFrame(pd.DataFrame):
+    
     
     def __init__(self) -> None:
         super().__init__()
         self.prolog_to_categorical_dataframe()
-        self.eda()
+        self.to_csv()
         self.train_model()
-        self.plot_learning_curve_single_run()
     
     
     def prolog_to_categorical_dataframe(self: pd.DataFrame) -> None:
+    
         """
         Converte il dataset Prolog dei diamanti in un DataFrame pandas
         SOSTITUENDO i valori numerici con le classificazioni categoriali
         definite nelle regole del codice prolog.
+
         """
+    
         prolog = Prolog()
         prolog.consult(PROLOG_FILE)
+    
     
         # Trova tutti i diamanti
         risultati = list(prolog.query("prop(Diamond, carat, _)"))
@@ -215,6 +102,14 @@ class CategoricalDataFrame(pd.DataFrame):
     
         for col in df.columns:
             self[col] = df[col]
+
+
+    def to_csv(self, path: str = CATEGORICAL_CSV) -> None:
+        """
+        Salva il DataFrame in un file CSV.
+        """
+            
+        pd.DataFrame.to_csv(self, path, index=False)
 
 
     def get_target_column(self: pd.DataFrame) -> str:
@@ -340,8 +235,7 @@ class CategoricalDataFrame(pd.DataFrame):
     # =============================================================================
     # SEZIONE 5: PAIRPLOT DELLE VARIABILI PRINCIPALI (ADATTATO)
     # =============================================================================
-    
-    
+
         variabili_principali = ['carat', 'cut', 'color', 'clarity', target]
         variabili_presenti = [col for col in variabili_principali if col in self.columns]
 
@@ -402,6 +296,8 @@ class CategoricalDataFrame(pd.DataFrame):
                                         ax.text(jj, ii, f'{cross_tab.iloc[ii, jj]}', 
                                             ha="center", va="center", color="black", fontsize=5)
 
+            # MODIFICA 10: Titolo principale più piccolo
+            #plt.suptitle("Matrice di Distribuzioni e Associazioni", fontsize=5, y=0.95)
             plt.tight_layout()
             plt.show()
 
@@ -508,168 +404,148 @@ class CategoricalDataFrame(pd.DataFrame):
         
         return preprocessor, selector, target_col, feature_cols   
 
-    """
-    def train_model(self):
+
+    def plot_reliability_diagram(self, model_path: str = MODEL_PATH):
+        """
+        Genera un reliability plot per valutare la calibrazione delle probabilità del modello.
+        
+        Un reliability plot confronta le probabilità predette con le frequenze empiriche
+        delle classi, mostrando quanto le probabilità siano ben calibrate.
+        
+        Args:
+            model_path: Percorso del modello salvato
+        """
+        import matplotlib.pyplot as plt
+        from sklearn.calibration import calibration_curve
+        
+        # Carica il modello
+        payload = joblib.load(model_path)
+        model = payload["model"]
+        le = payload.get("label_encoder")
+        
+        # Prepara i dati
         pre, selector, target, feats = self.build_preprocessor()
         X, y = self[feats], self[target]
         
-        # ENCODING: Converti y in numerico per le metriche
+        # Codifica target
+        if le is None:
+            le = LabelEncoder()
+            y_encoded = le.fit_transform(y)
+        else:
+            y_encoded = le.transform(y)
+        
+        # Ottieni probabilità predette
+        if hasattr(model, 'predict_proba'):
+            y_proba = model.predict_proba(X)
+            
+            # Per multiclasse, possiamo valutare ogni classe separatamente
+            n_classes = len(le.classes_)
+            
+            fig, axes = plt.subplots(1, n_classes, figsize=(5*n_classes, 5))
+            if n_classes == 1:
+                axes = [axes]
+            
+            for i, (cls_name, ax) in enumerate(zip(le.classes_, axes)):
+                # Per la classe i, considera probabilità di appartenenza a questa classe
+                prob_true, prob_pred = calibration_curve(
+                    y_encoded == i, 
+                    y_proba[:, i], 
+                    n_bins=10,
+                    strategy='uniform'
+                )
+                
+                ax.plot(prob_pred, prob_true, marker='o', linewidth=1, label=f'Classe {cls_name}')
+                ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfettamente calibrato')
+                ax.set_xlabel('Probabilità predetta')
+                ax.set_ylabel('Frazione osservata')
+                ax.set_title(f'Reliability Plot - Classe {cls_name}')
+                ax.legend()
+                ax.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.show()
+            
+            # Calcola e stampa Brier score (metrica di calibrazione)
+            from sklearn.metrics import brier_score_loss
+            brier_scores = []
+            for i in range(n_classes):
+                brier = brier_score_loss(y_encoded == i, y_proba[:, i])
+                brier_scores.append((le.classes_[i], brier))
+                print(f"Brier score per classe {le.classes_[i]}: {brier:.4f}")
+            
+            return brier_scores
+        else:
+            print("Il modello non supporta predict_proba()")
+            return None
+
+
+
+
+    def train_model(self, model_path: str = MODEL_PATH, plot_reliability: bool = True) -> None:
+        """
+        Addestra il modello Random Forest con calibratore SENZA valutazioni.
+        Le valutazioni vanno fatte con evaluate_model_performance() separatamente.
+        """
+        # 1. Preparazione dati e preprocessing
+        pre, selector, target, feats = self.build_preprocessor()
+        X, y = self[feats], self[target]
+        
+        # 2. Encoding della variabile target
         le = LabelEncoder()
         y_encoded = le.fit_transform(y)  # low=0, medium=1, high=2
         class_names = le.classes_
         
-        X_train_full, X_test, y_train_full, y_test = train_test_split(X, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42)
-        X_fit, X_cal, y_fit, y_cal = train_test_split(X_train_full, y_train_full, test_size=0.2, stratify=y_train_full, random_state=42)    
+        # 3. Split train-test (solo per addestramento, il test sarà usato dopo)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42
+        )
         
-        clf = RandomForestClassifier(n_estimators=300,n_jobs=-1,class_weight="balanced",random_state=42,)
+        # 4. Costruzione della pipeline
+        clf = RandomForestClassifier(
+            n_estimators=300,
+            n_jobs=-1,
+            class_weight="balanced",
+            random_state=42,
+        )
+        
         pipe = Pipeline([("pre", pre), ("sel", selector), ("clf", clf)])
-        cv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=42)
         
-        # ROC-AUC per multiclasse
-        cv_scores = cross_val_score(pipe, X_train_full, y_train_full, cv=cv, scoring='roc_auc_ovo', n_jobs=-1)
-        print(f"ROC-AUC OVO media (CV={CV_SPLITS}): {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
-
-        pipe.fit(X_fit, y_fit)
-        method: str = "isotonic" if len(y_cal) >= 100 else "sigmoid"
-        # cal = CalibratedClassifierCV(pipe, method=method, cv="prefit")  # type: ignore
-        cal = CalibratedClassifierCV(estimator=pipe, method=method, cv=3)  # NEW SYNTAX
-        cal.fit(X_cal, y_cal)
-        print(f"Calibrazione probabilita: metodo = {method}")
-
-        # Per multiclasse, predict_proba ritorna matrice [n_samples, n_classes]
-        proba_cal = cal.predict_proba(X_cal)
+        # 5. Calibrazione delle probabilità
+        method: str = "sigmoid"  # isotonic necessita più dati
+        cal = CalibratedClassifierCV(estimator=pipe, method=method, cv=3)
         
-        # Soglie per multiclasse - approccio divers, per multiclasse non ha senso una soglia singola
-        print("Nota: Per classificazione multiclasse, le soglie sono per classe")
-        
-        y_pred_cal = cal.predict(X_cal)
-        
-        from sklearn.metrics import f1_score
-        f1_macro = f1_score(y_cal, y_pred_cal, average='macro', zero_division=0)
-        f1_weighted = f1_score(y_cal, y_pred_cal, average='weighted', zero_division=0)
-        
-        print(f"F1-score macro (validation): {f1_macro:.3f}")
-        print(f"F1-score weighted (validation): {f1_weighted:.3f}")
-
-        # Test set
-        proba_test = cal.predict_proba(X_test)
-        y_pred_test = cal.predict(X_test)
-        acc = accuracy_score(y_test, y_pred_test)
-        
-        # ROC-AUC per multiclasse
-        auc_ovo = roc_auc_score(y_test, proba_test, multi_class='ovo', average='macro')
-        auc_ovr = roc_auc_score(y_test, proba_test, multi_class='ovr', average='macro')
-        
-        print("\n=== Performance su test (probabilita calibrate) ===")
-        print(f"Accuracy: {acc:.3f}")
-        print(f"ROC-AUC OVO (macro): {auc_ovo:.3f}")
-        print(f"ROC-AUC OVR (macro): {auc_ovr:.3f}\n")
-        
-        # Report di classificazione con nomi originali
-        y_test_original = le.inverse_transform(y_test)
-        y_pred_test_original = le.inverse_transform(y_pred_test)
-        
-        print(classification_report(y_test_original, y_pred_test_original,  target_names=class_names))
-
-        # Matrice di confusione
-        cm = confusion_matrix(y_test, y_pred_test)
-        disp = ConfusionMatrixDisplay(cm, display_labels=class_names)
-        disp.plot()
-        plt.title(f"Confusion matrix (test) - {len(class_names)} classi")
-        plt.show()
-
-        # Per multiclasse, salva le soglie come dizionario per classe
-        # Possiamo salvare la probabilità massima per ogni predizione
-        best_thresholds = {
-            "decision_strategy": "argmax",  # Per multiclasse usiamo argmax delle probabilità
-            "classes": class_names.tolist(),
-            "f1_macro": float(f1_macro),
-            "f1_weighted": float(f1_weighted)
-        }
-        
-        payload = {
-            "model": cal,                    
-            "thresholds": best_thresholds,   
-            "features": feats,               
-            "calibrated": True,              
-            "calibration": {"method": method},
-            "label_encoder": le,  # Salva anche il label encoder
-            "class_names": class_names.tolist()
-        }
-
-        joblib.dump(payload, MODEL_PATH)
-        print(f"Modello calibrato e soglie salvati in {MODEL_PATH}")                
-    """
-
-     
-    def train_model(self):
-        pre, selector, target, feats = self.build_preprocessor()
-        X, y = self[feats], self[target]
-        
-        # ENCODING: Converti y in numerico per le metriche
-        le = LabelEncoder()
-        y_encoded = le.fit_transform(y)  # low=0, medium=1, high=2
-        class_names = le.classes_
-        
-        # ✅ FIX: Single train/test split (no calibration split)
-        X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42)
-        
-        clf = RandomForestClassifier(n_estimators=300,n_jobs=-1,class_weight="balanced",random_state=42,)
-        pipe = Pipeline([("pre", pre), ("sel", selector), ("clf", clf)])
-        cv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=42)
-        
-        # ROC-AUC per multiclasse
-        cv_scores = cross_val_score(pipe, X_train, y_train, cv=cv, scoring='roc_auc_ovo', n_jobs=-1)
-        print(f"ROC-AUC OVO media (CV={CV_SPLITS}): {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
-
-        # ✅ FIX: Use CalibratedClassifierCV with CV (not prefit), this will do internal CV for calibration
-        method: str = "sigmoid"  # isotonic needs more data
-        cal = CalibratedClassifierCV(estimator=pipe,method=method, cv=3)  # Does 3-fold CV internally on training data
-        
-        
+        # 6. Addestramento del modello (SOLO questo!)
+        print("Addestramento del modello in corso...")
         cal.fit(X_train, y_train)
-        print(f"Calibrazione probabilita: metodo = {method} (con CV=3)")
-
-        # Validation metrics on training set (from CV)
-        y_pred_train = cal.predict(X_train)
-        f1_macro = f1_score(y_train, y_pred_train, average='macro', zero_division=0)
-        f1_weighted = f1_score(y_train, y_pred_train, average='weighted', zero_division=0)
-        print(f"F1-score macro (training): {f1_macro:.3f}")
-        print(f"F1-score weighted (training): {f1_weighted:.3f}")
-
-        # Test set evaluation
-        proba_test = cal.predict_proba(X_test)
-        y_pred_test = cal.predict(X_test)
-        acc = accuracy_score(y_test, y_pred_test)
-
-        # ROC-AUC per multiclasse
-        auc_ovo = roc_auc_score(y_test, proba_test, multi_class='ovo', average='macro')
-        auc_ovr = roc_auc_score(y_test, proba_test, multi_class='ovr', average='macro')
-        print("\n=== Performance su test (probabilita calibrate) ===")
-        print(f"Accuracy: {acc:.3f}")
-        print(f"ROC-AUC OVO (macro): {auc_ovo:.3f}")
-        print(f"ROC-AUC OVR (macro): {auc_ovr:.3f}\n")
+        print(f"✓ Modello addestrato con calibrazione ({method})")
         
-        # Report di classificazione con nomi originali
-        y_test_original = le.inverse_transform(y_test)
-        y_pred_test_original = le.inverse_transform(y_pred_test)
-        print(classification_report(y_test_original, y_pred_test_original, target_names=class_names))
-
-        # Matrice di confusione
-        cm = confusion_matrix(y_test, y_pred_test)
-        disp = ConfusionMatrixDisplay(cm, display_labels=class_names)
-        disp.plot()
-        plt.title(f"Confusion matrix (test) - {len(class_names)} classi")
-        plt.show()
-
-        # Per multiclasse, salva le soglie come dizionario per classe
-        best_thresholds = {"decision_strategy": "argmax", "classes": class_names.tolist(), "f1_macro": float(f1_macro), "f1_weighted": float(f1_weighted)}
-        payload = {"model": cal, "thresholds": best_thresholds,"features": feats, "calibrated": True, "calibration": {"method": method},"label_encoder": le,"class_names": class_names.tolist()}
-
-        joblib.dump(payload, MODEL_PATH)
-        print(f"Modello calibrato e soglie salvati in {MODEL_PATH}")
+        # 7. Preparazione del payload per il salvataggio
+        payload = {
+            "model": cal,
+            "thresholds": {
+                "decision_strategy": "argmax",
+                "classes": class_names.tolist()
+            },
+            "features": feats,
+            "calibrated": True,
+            "calibration": {"method": method},
+            "label_encoder": le,
+            "class_names": class_names.tolist(),
+            "train_test_split": {
+                "X_train_shape": X_train.shape,
+                "X_test_shape": X_test.shape,
+                "random_state": 42
+            }
+        }
+        
+        # 8. Salvataggio del modello
+        joblib.dump(payload, model_path)
+        print(f"✓ Modello salvato in: {model_path}")
+        
+        if plot_reliability:
+            self.plot_reliability_diagram(model_path=model_path)
+                                         
     
-
     def plot_learning_curve_single_run(
         self,
         seed: int = 42,
@@ -677,12 +553,11 @@ class CategoricalDataFrame(pd.DataFrame):
         n_estimators: int = 300,
         sizes: int | list = 8,
         scoring: str = "f1_weighted",
-        out_png: str | PathlibPath | None = None,  
-        out_csv: str | PathlibPath | None = None,
-        title: str | None = None,
-    ) -> tuple[PathlibPath, PathlibPath | None]:
+        title: str | None = None
+    ) -> None:
         """
         Genera learning curve per analizzare comportamento algoritmo con diverse dimensioni training set.
+        
         """
         import matplotlib.pyplot as plt
         
@@ -733,70 +608,309 @@ class CategoricalDataFrame(pd.DataFrame):
         test_std = np.std(test_scores, axis=1)
         
         # CREAZIONE GRAFICO:
-        plt.figure(figsize=(8, 5))
+        fig, ax = plt.subplots(figsize=(8, 5))
         
         # Curva training score con intervallo di confidenza
-        plt.plot(train_sizes, train_mean, marker="o", label="Training")
-        plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.15)
+        ax.plot(train_sizes, train_mean, marker="o", label="Training")
+        ax.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.15)
         
         # Curva validation score con intervallo di confidenza
-        plt.plot(train_sizes, test_mean, marker="s", label="Cross-Validation")
-        plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.15)
+        ax.plot(train_sizes, test_mean, marker="s", label="Cross-Validation")
+        ax.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.15)
         
-        plt.xlabel("Training set size")
-        plt.ylabel(scoring)
+        ax.set_xlabel("Training set size")
+        ax.set_ylabel(scoring)
         
         # Titolo automatico o personalizzato
         if title is None:
             title = f"Learning Curve (seed={seed}, splits={splits}, n_estimators={n_estimators})"
-        plt.title(title)
+        ax.set_title(title)
         
-        plt.legend()
-        
-        # ✅ CORREZIONE: Gestione del caso out_png = None
-        if out_png is None:
-            # Crea nome file automatico
-            out_png = f"test_output/learning_curve_seed{seed}_splits{splits}_ne{n_estimators}.png"
-        
-        # Converti in PathlibPath
-        out_png_path = PathlibPath(out_png)
-        out_png_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # SALVATAGGIO GRAFICO:
+        ax.legend()
         plt.tight_layout()
-        plt.savefig(out_png_path, dpi=150)
-        plt.close()
+        
 
-        # SALVATAGGIO DATI NUMERICI (OPZIONALE):
-        out_csv_path = None
-        if out_csv is not None:
-            out_csv_path = PathlibPath(out_csv)
-            out_csv_path.parent.mkdir(parents=True, exist_ok=True)
-            pd.DataFrame({
-                "train_size": train_sizes,
-                "train_mean": train_mean,
-                "train_std": train_std,
-                "test_mean": test_mean,
-                "test_std": test_std,
-                "scoring": scoring,
-                "seed": seed,
-                "splits": splits,
-                "n_estimators": n_estimators,
-                "fit_times_mean": np.mean(fit_times, axis=1),
-                "score_times_mean": np.mean(score_times, axis=1),
-            }).to_csv(out_csv_path, index=False)
+        
+        # MOSTRA GRAFICO:
+        plt.show()
+        
+        
+        
+    '''        
+        def plot_confusion_matrix(self, 
+                            model_path: str = MODEL_PATH,
+                            title: str = "Confusion Matrix") -> None:
+        """
+        Carica un modello salvato e mostra la matrice di confusione sul test set.
+        
+        Args:
+            model_path: Percorso del file del modello salvato (default: MODEL_PATH)
+            title: Titolo del grafico della matrice di confusione
+        """
+        # Carica il modello salvato
+        try:
+            payload = joblib.load(model_path)
+            model = payload["model"]
+            le = payload.get("label_encoder")
+            class_names = payload.get("class_names")
+            features = payload.get("features")
+            
+            print(f"Modello caricato da: {model_path}")
+            print(f"Classi: {class_names}")
+            print(f"Numero di feature: {len(features)}")
+            
+        except FileNotFoundError:
+            print(f"Errore: File del modello non trovato in {model_path}")
+            print("Esegui prima train_model() per addestrare e salvare il modello.")
+            return
+        except Exception as e:
+            print(f"Errore nel caricamento del modello: {e}")
+            return
+        
+        # Prepara i dati per la valutazione
+        pre, selector, target, feats = self.build_preprocessor()
+        
+        # Assicurati che le feature siano le stesse usate durante l'addestramento
+        if features is not None:
+            X = self[features]
+        else:
+            X = self[feats]
+        
+        # Codifica la variabile target
+        if le is None:
+            le = LabelEncoder()
+            y_encoded = le.fit_transform(self[target])
+            class_names = le.classes_
+        else:
+            y_encoded = le.transform(self[target])
+        
+        # Divisione train-test (deve essere la stessa usata durante l'addestramento)
+        X_train_full, X_test, y_train_full, y_test = train_test_split(
+            X, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42
+        )
+        
+        # Predizioni sul test set
+        y_pred_test = model.predict(X_test)
+        
+        # Calcola la matrice di confusione
+        cm = confusion_matrix(y_test, y_pred_test)
+        
+        # Visualizza la matrice di confusione
+        fig, ax = plt.subplots(figsize=(8, 6))
+        
+        # Usa ConfusionMatrixDisplay per una visualizzazione standard
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=cm,
+            display_labels=class_names
+        )
+        
+        disp.plot(ax=ax, cmap='Blues', values_format='d', colorbar=True)
+        ax.set_title(title)
+        
+        # Aggiungi statistiche
+        accuracy = accuracy_score(y_test, y_pred_test)
+        ax.text(0.5, -0.15, f"Accuracy: {accuracy:.3f}", 
+                transform=ax.transAxes, ha='center', fontsize=10)
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # Stampa il report di classificazione
+        print("\n=== Classification Report ===")
+        print(classification_report(
+            y_test, 
+            y_pred_test, 
+            target_names=class_names,
+            digits=3
+        ))        
 
-        return out_png_path, out_csv_path
+        
+    '''
+
+
+    def evaluate_model_performance(self, model_path: str = MODEL_PATH, 
+                                  plot_confusion_matrix: bool = True):
+        """
+        Valuta le performance di un modello salvato in modo indipendente.
+        Valuta su TUTTO il dataset per coerenza e stabilità.
+        
+        Args:
+            model_path: Percorso del file del modello salvato (default: MODEL_PATH)
+            plot_confusion_matrix: Se True, mostra il grafico della matrice di confusione
+        
+        Returns:
+            dict: Dizionario con tutte le metriche di performance
+        """
+        print(f"\n{'='*60}")
+        print("VALUTAZIONE PERFORMANCE MODELLO".center(60))
+        print('='*60)
+        
+        # 1. Carica il modello salvato
+        try:
+            payload = joblib.load(model_path)
+            model = payload["model"]
+            le = payload.get("label_encoder")
+            features = payload.get("features")
+            class_names = payload.get("class_names", ["low", "medium", "high"])
+            
+            print(f"✓ Modello caricato da: {model_path}")
+            print(f"✓ Classi: {class_names}")
+            print(f"✓ Numero di feature: {len(features) if features else 'N/A'}")
+            
+        except FileNotFoundError:
+            print(f"✗ ERRORE: File del modello non trovato in {model_path}")
+            raise
+        except Exception as e:
+            print(f"✗ ERRORE nel caricamento del modello: {e}")
+            raise
+        
+        # 2. Prepara X e y dal DataFrame corrente
+        if features is not None:
+            X = self[features]
+        else:
+            X = self.drop(columns=['price'])
+        
+        if le is None:
+            le = LabelEncoder()
+            y_encoded = le.fit_transform(self['price'])
+            class_names = le.classes_.tolist()
+        else:
+            y_encoded = le.transform(self['price'])
+            # Assicurati che class_names sia una lista
+            if not isinstance(class_names, list):
+                class_names = list(class_names)
+        
+        y = y_encoded
+        print(f"✓ Dimensioni dataset: {X.shape}")
+        
+        # CORREZIONE: Gestisci np.bincount in modo sicuro
+        class_distribution = np.bincount(y)
+        if hasattr(class_distribution, 'tolist'):
+            class_distribution_list = class_distribution.tolist()
+        else:
+            class_distribution_list = list(class_distribution)
+        
+        print(f"✓ Distribuzione classi: {class_distribution_list}")
+        print(f"✓ Valutazione su: TUTTO il dataset ({len(self)} campioni)")
+        
+        # 3. Cross-validation ROC-AUC
+        metrics = {}
+        
+        if hasattr(model, 'predict_proba'):
+            cv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=42)
+            
+            try:
+                cv_scores = cross_val_score(model, X, y, cv=cv, 
+                                          scoring='roc_auc_ovo', n_jobs=-1)
+                
+                metrics['cv_roc_auc_mean'] = float(cv_scores.mean())
+                metrics['cv_roc_auc_std'] = float(cv_scores.std())
+                
+                print(f"\n{' Cross-Validation ROC-AUC ':-^60}")
+                print(f"Media (CV={CV_SPLITS}): {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
+                
+            except Exception as e:
+                print(f"⚠ Cross-validation non disponibile: {e}")
+                metrics['cv_roc_auc_mean'] = None
+                metrics['cv_roc_auc_std'] = None
+        
+        # 4. Predizioni su tutto il dataset
+        y_pred = model.predict(X)
+        y_proba = model.predict_proba(X) if hasattr(model, 'predict_proba') else None
+        
+        # 5. Calcola metriche su tutto il dataset
+        metrics['accuracy'] = float(accuracy_score(y, y_pred))
+        metrics['f1_macro'] = float(f1_score(y, y_pred, average='macro', zero_division=0))
+        metrics['f1_weighted'] = float(f1_score(y, y_pred, average='weighted', zero_division=0))
+        
+        if y_proba is not None:
+            try:
+                metrics['roc_auc_ovo'] = float(roc_auc_score(y, y_proba, multi_class='ovo', average='macro'))
+                metrics['roc_auc_ovr'] = float(roc_auc_score(y, y_proba, multi_class='ovr', average='macro'))
+            except:
+                metrics['roc_auc_ovo'] = None
+                metrics['roc_auc_ovr'] = None
+        
+        # 6. Stampare metriche complete
+        print(f"\n{' Metriche Complete (su tutto il dataset) ':-^60}")
+        print(f"Accuracy:           {metrics['accuracy']:.3f}")
+        print(f"F1-score (macro):   {metrics['f1_macro']:.3f}")
+        print(f"F1-score (weighted):{metrics['f1_weighted']:.3f}")
+        
+        if metrics.get('roc_auc_ovo') is not None:
+            print(f"ROC-AUC OVO (macro): {metrics['roc_auc_ovo']:.3f}")
+            print(f"ROC-AUC OVR (macro): {metrics['roc_auc_ovr']:.3f}")
+        
+        # 7. Report di classificazione
+        print(f"\n{' Classification Report (su tutto il dataset) ':-^60}")
+        y_original = le.inverse_transform(y)
+        y_pred_original = le.inverse_transform(y_pred)
+        
+        print(classification_report(y_original, y_pred_original, 
+                                    target_names=class_names, digits=3))
+        
+        # 8. MATRICE DI CONFUSIONE - Solo se richiesto
+        if plot_confusion_matrix:
+            print(f"\n{' Matrice di Confusione (su tutto il dataset) ':-^60}")
+            
+            # Calcola la matrice di confusione
+            cm = confusion_matrix(y, y_pred)
+            
+            # Visualizza grafico
+            fig, ax = plt.subplots(figsize=(8, 6))
+            disp = ConfusionMatrixDisplay(
+                confusion_matrix=cm,
+                display_labels=class_names
+            )
+            disp.plot(ax=ax, cmap='Blues', values_format='d', colorbar=True)
+            ax.set_title(f"Matrice di Confusione - Tutto il Dataset (n={len(self)})")
+            
+            # Aggiungi statistiche
+            accuracy = accuracy_score(y, y_pred)
+            ax.text(0.5, -0.15, f"Accuracy: {accuracy:.3f} | Campioni: {len(self)}", 
+                    transform=ax.transAxes, ha='center', fontsize=10)
+            
+            plt.tight_layout()
+            plt.show()
+            
+            # 9. Mostra matrice di confusione in formato testuale
+            print("\nMatrice di confusione (valori assoluti):")
+            cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
+            print(cm_df.to_string())
+            
+            # 10. Calcola e mostra accuratezza per classe
+            print("\nAccuratezza per classe:")
+            for i, class_name in enumerate(class_names):
+                class_accuracy = cm[i, i] / cm[i].sum() if cm[i].sum() > 0 else 0
+                print(f"  {class_name}: {class_accuracy:.3f} ({cm[i, i]}/{cm[i].sum()})")
+            
+            # Salva la matrice nelle metriche
+            metrics['confusion_matrix'] = cm.tolist()
+            metrics['confusion_matrix_df'] = cm_df.to_dict()
+        else:
+            # Calcola comunque la matrice per le metriche, ma senza visualizzazione
+            cm = confusion_matrix(y, y_pred)
+            metrics['confusion_matrix'] = cm.tolist()
+            print("\n⚠ Matrice di confusione non visualizzata (plot_confusion_matrix=False)")
+        
+        # 11. Aggiungi metadati alle metriche
+        metrics['model_path'] = model_path
+        metrics['dataset_size'] = len(self)
+        metrics['n_features'] = X.shape[1]
+        metrics['n_classes'] = len(class_names)
+        metrics['class_names'] = class_names
+        metrics['class_distribution'] = class_distribution_list
+        metrics['evaluation_strategy'] = "full_dataset"
+        metrics['plot_confusion_matrix'] = plot_confusion_matrix
+        
+        print(f"\n{' Valutazione completata ':-^60}")
+        print(f"Dataset: {metrics['dataset_size']} campioni, {metrics['n_features']} feature")
+        print(f"Classi: {len(class_names)} ({', '.join(class_names)})")
+        print(f"Strategia: Valutazione su tutto il dataset")
+        print(f"Matrice di confusione visualizzata: {'Sì' if plot_confusion_matrix else 'No'}")
+        
+        return metrics  
     
-    
-    
-    
-    
-
-
-
-
-
 
 
 
