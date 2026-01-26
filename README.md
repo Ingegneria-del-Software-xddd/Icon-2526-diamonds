@@ -50,13 +50,15 @@ Il progetto si configura come un sistema di Business Intelligence e Machine Lear
 Tutte queste informazioni verranno salvate in una sottocartella chiamata test_output, e successivamente verrà riportato nel terminale il menù principale, dove potranno essere svolte altre 5 operazioni differenti:
    1.   testare le previsioni dell'AI;
    2.   esplorare le soglie di valutazione;
-   3.   addestrare il modello AI;
-   4.   revisionare le informazioni del sistema;
-   5.   uscita dal sistema
+   3.   esportare RDF ed attivare la conoscenza semantica;
+   4.   addestrare il modello AI;
+   5.   revisionare le informazioni del sistema;
+   6.   verificare le prestazione del sistema di apprendimento;
+   7.   uscita dal sistema
 
 
 
-<img align="center" src="Immagini/Screenshot_menu_principale.png" width=400>
+<img align="center" src="immagini/Screenshot_menu_principale.png" width=400>
 
 
 
