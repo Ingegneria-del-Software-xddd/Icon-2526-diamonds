@@ -1,4 +1,7 @@
 # ICON 25-26
+
+### Diamond Price Prediction & Knowledge Base Reasoning
+
 #### Esame di ingegneria della conoscenza, UniBa, realizzato da: 
 
 - Stefano Cici, 796648, s.cici2@studenti.uniba.it
@@ -10,7 +13,7 @@
 
 ### ⚙ Setup iniziale dell'ambiente di lavoro:
 
-0. Requisiti: python 3.12.3
+0. Requisiti: python 3.12.3, Swi Prolog
 
 1. Clonare il repository eseguendo il seguente comando su terminale:  
     ```
@@ -37,6 +40,4 @@
 
 ***
 
-## Esecuzione del progetto
-Aggiungere tutti i comandi che serviranno per le operazioni avviabili
 
