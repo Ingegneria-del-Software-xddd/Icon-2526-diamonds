@@ -29,32 +29,16 @@
 
 3. Installare dipendenze (in seguito sostituito con pip install -r requirements.txt)
     ```py
-    pip install pandas numpy scikit-learn matplotlib seaborn scipy pyswip joblib
+    pip install pandas numpy scikit-learn matplotlib seaborn scipy pyswip joblib rdflib
     ```
 
 4. Avviare il programma
     ```py
     python kb\ui.py
     ```
-Il progetto si configura come un sistema di Business Intelligence e Machine Learning dedicato alla classificazione del valore commerciale dei diamanti. L'obiettivo principale è comprendere quali caratteristiche fisiche e qualitative influenzino il prezzo (suddiviso nelle classi high, medium, low) e costruire un modello predittivo affidabile.
-
-### Punti Chiave dell'Analisi:
-1. Analisi Correlativa: Utilizzando l'indice Cramér's V (Figure 2), il progetto identifica che il fattore più determinante per il prezzo è la caratura (carat, associazione 0.68), seguita dalle dimensioni fisiche (x, y, z).
-
-2. Profilazione dei Dati: Attraverso matrici di distribuzione percentuale (Figure 4-7), il sistema evidenzia pattern specifici: ad esempio, il 100% dei diamanti con caratura "high" ricade nella fascia di prezzo "high", mentre la purezza (clarity) mostra un impatto più sfumato.
-
-3. Modellazione Predittiva: È stato implementato un modello di classificazione con probabilità calibrate, capace di distinguere le fasce di prezzo con un'ottima accuratezza (80% sul test set) e un'area sotto la curva ROC media di 0.90 in validazione.
-
-4. Monitoraggio Performance: Il progetto include una valutazione dettagliata tramite matrice di confusione (Figure 8) e report di classificazione, mostrando una precisione perfetta (100%) nell'identificare i diamanti di alto e basso valore, con qualche incertezza fisiologica solo sulla fascia media.
    
-Tutte queste informazioni verranno salvate in una sottocartella chiamata test_output, e successivamente verrà riportato nel terminale il menù principale, dove potranno essere svolte altre 5 operazioni differenti:
-   1.   testare le previsioni dell'AI;
-   2.   esplorare le soglie di valutazione;
-   3.   esportare RDF ed attivare la conoscenza semantica;
-   4.   addestrare il modello AI;
-   5.   revisionare le informazioni del sistema;
-   6.   verificare le prestazione del sistema di apprendimento;
-   7.   uscita dal sistema
+Una volta effettuate le configurazioni iniziali del sistema si aprirà il menù principale, dove potranno essere svolte 7 operazioni in totale:
+
 
 
 
