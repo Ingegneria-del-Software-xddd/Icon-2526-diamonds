@@ -36,20 +36,16 @@
     ```py
     python kb\ui.py
     ```
-   
-Una volta effettuate le configurazioni iniziali del sistema si aprirà il menù principale, dove potranno essere svolte 7 operazioni in totale:
-
-
-
-
-<img align="center" src="immagini/Screenshot_menu_principale.png" width=400>
-
-
-
-
 
 ***
 
 ## Esecuzione del progetto
-Aggiungere tutti i comandi che serviranno per le operazioni avviabili
+
+
+<img align="center" src="immagini/Screenshot_menu_principale.png" width=400>
+
+All’avvio, il sistema presenta un menù principale testuale che permette di guidare l’utente in base alle funzionalità disponibili. 
+È possibile testare la previsione AI sui diamanti inserendo o generando dati e ottenendo stime di prezzo con probabilità e livello di confidenza. Il sistema consente inoltre di esplorare e gestire soglie di valutazione, applicando regole esperte sulla qualità dei diamanti.
+Un modulo dedicato permette l’esportazione della conoscenza in formato RDF/Turtle, con supporto a query SPARQL e generazione di report semantici. L’utente inoltre può riaddestrare il modello AI, analizzare i dati in modo esplorativo e verificare le prestazioni del sistema di apprendimento.
+L’esecuzione termina selezionando l’opzione di uscita dal menu.
 
