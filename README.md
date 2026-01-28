@@ -21,7 +21,7 @@
 
 1. Clonare il repository eseguendo il seguente comando su terminale:  
     ```
-    git clone https://github.com/Ingegneria-del-Software-xddd/test-icon
+    git clone https://github.com/Ingegneria-del-Software-xddd/Icon-2526-diamonds
     ```
     ```
     cd test-icon
@@ -52,13 +52,19 @@ All’avvio, il sistema presenta un menù principale testuale che permette di gu
 
 <img align="center" src="immagini/Screenshot_menu_principale.png" width=400>
 
-- È possibile testare la previsione AI sui diamanti inserendo o generando dati e ottenendo stime di prezzo con probabilità e livello di confidenza. 
+Le operazioni possibili sono:
 
-- Il sistema consente inoltre di esplorare e gestire soglie di valutazione, applicando regole esperte sulla qualità dei diamanti.
+- Testare la previsione del Machine Learning sui diamanti inserendo o generando dati e ottenendo stime di prezzo con probabilità e livello di confidenza. 
 
-- Un modulo dedicato permette l’esportazione della conoscenza in formato RDF/Turtle, con supporto a query SPARQL e generazione di report semantici. 
+- Esplorare e gestire soglie di valutazione tramite Knowledge Base, applicando regole esperte sulla qualità dei diamanti.
 
-- L’utente inoltre può riaddestrare il modello AI, analizzare i dati in modo esplorativo e verificare le prestazioni del sistema di apprendimento.
+- Esportare della conoscenza in formato RDF/Turtle, con supporto a query SPARQL e generazione di report semantici. 
+
+- Riaddestrare il modello AI;
+
+- Analizzare i dati in modo esplorativo;
+
+- Verificare le prestazioni del sistema di apprendimento.
 
 L’esecuzione termina selezionando l’opzione di uscita dal menu.
 
