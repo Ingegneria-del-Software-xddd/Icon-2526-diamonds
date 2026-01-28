@@ -1,22 +1,30 @@
 # ICON 25-26
+
+### Diamond Price Prediction & Knowledge Base Reasoning
+
+
 #### Esame di ingegneria della conoscenza, UniBa, realizzato da: 
 
-- Stefano Cici
+- [Stefano Cici](https://github.com/Stefano04Cici) - 796648;
 
-- Antonio Bolsi
+- [Antonio Bolsi](https://github.com/Antob0906) - 759125;
 
-- Roberto Barracano
+- [Roberto Barracano](https://github.com/Hue-Jhan) - 799467;
 
+***
 
 ### ⚙ Setup iniziale dell'ambiente di lavoro:
 
 0. Requisiti iniziali:
-- python 3.12.3
-- prolog 10.0.0-1
+    - Python 3.12.3;
+    - [Swi prolog](https://www.swi-prolog.org) 10.0.0-1;
 
 1. Clonare il repository eseguendo il seguente comando su terminale:  
     ```
     git clone https://github.com/Ingegneria-del-Software-xddd/test-icon
+    ```
+    ```
+    cd test-icon
     ```
 
 2. Creare e attivare un nuovo ambiente virtuale
@@ -27,17 +35,16 @@
     venv\Scripts\activate
     ```
 
-3. Installare dipendenze (in seguito sostituito con pip install -r requirements.txt)
+3. Installare dipendenze necessarie:
     ```py
     pip install pandas numpy scikit-learn matplotlib seaborn scipy pyswip joblib rdflib
     ```
 
 4. Avviare il programma
     ```py
-    python kb\ui.py
+    cd code/
     ```
 
-***
 
 ## Esecuzione del progetto
 
@@ -45,13 +52,13 @@ All’avvio, il sistema presenta un menù principale testuale che permette di gu
 
 <img align="center" src="immagini/Screenshot_menu_principale.png" width=400>
 
-È possibile testare la previsione AI sui diamanti inserendo o generando dati e ottenendo stime di prezzo con probabilità e livello di confidenza. 
+- È possibile testare la previsione AI sui diamanti inserendo o generando dati e ottenendo stime di prezzo con probabilità e livello di confidenza. 
 
-Il sistema consente inoltre di esplorare e gestire soglie di valutazione, applicando regole esperte sulla qualità dei diamanti.
+- Il sistema consente inoltre di esplorare e gestire soglie di valutazione, applicando regole esperte sulla qualità dei diamanti.
 
-Un modulo dedicato permette l’esportazione della conoscenza in formato RDF/Turtle, con supporto a query SPARQL e generazione di report semantici. 
+- Un modulo dedicato permette l’esportazione della conoscenza in formato RDF/Turtle, con supporto a query SPARQL e generazione di report semantici. 
 
-L’utente inoltre può riaddestrare il modello AI, analizzare i dati in modo esplorativo e verificare le prestazioni del sistema di apprendimento.
+- L’utente inoltre può riaddestrare il modello AI, analizzare i dati in modo esplorativo e verificare le prestazioni del sistema di apprendimento.
 
 L’esecuzione termina selezionando l’opzione di uscita dal menu.
 

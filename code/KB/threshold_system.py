@@ -9,10 +9,14 @@ from pathlib import Path
 
 
 
+
+
+
 class BeautyLevel(Enum):
+
     """Livelli apprezzamento da parte dell'audience
-       per ogni caratteristica del diamante."""
-    
+        per ogni caratteristica del diamante."""   
+        
     LOW = 'low'
     MEDIUM = 'medium'
     HIGH = 'high'

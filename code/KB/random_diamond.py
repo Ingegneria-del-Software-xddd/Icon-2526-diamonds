@@ -1,12 +1,13 @@
-from config import RANDOM_DIAMOND
+from config import RANDOM_DIAMOND, CATEGORICAL_CSV
 from typing import Tuple, Dict, Any, Optional, List
 from preprocessing import CategoricalDataFrame
 import json
 import random
+import pandas as pd
 
 
 
-def random_diamond(df: CategoricalDataFrame, out_path: str = RANDOM_DIAMOND) -> Dict[str, Any]:
+def random_diamond(out_path: str = RANDOM_DIAMOND) -> Dict[str, Any]:
     """
     GENERA UN DIAMANTE CASUALE REALISTICO per testare il sistema di predizione.
     
@@ -22,8 +23,6 @@ def random_diamond(df: CategoricalDataFrame, out_path: str = RANDOM_DIAMOND) -> 
     3. Mantiene le proporzioni tra diverse qualità (es: pochi diamanti "ideal", molti "good")
     
     Args:
-        df: DataFrame categorico GIA' CARICATO con i dati dei diamanti
-            (Passiamo il DataFrame già pronto per evitare di ricaricarlo ogni volta)
         out_path: Percorso dove salvare il file JSON con il diamante generato
                   (default: valore da config.py)
     
@@ -47,6 +46,8 @@ def random_diamond(df: CategoricalDataFrame, out_path: str = RANDOM_DIAMOND) -> 
     # Perché rimuovere il prezzo?
     # Perché stiamo creando un diamante "NUOVO" di cui NON CONOSCIAMO il prezzo!
     # Il prezzo è quello che il nostro sistema AI deve PREDIRE.
+    
+    df = pd.read_csv(CATEGORICAL_CSV)
     
     # Creiamo una COPIA del DataFrame originale
     # Questo è importante per NON MODIFICARE il DataFrame originale
