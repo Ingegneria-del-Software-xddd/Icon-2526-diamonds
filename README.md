@@ -44,6 +44,9 @@
     ```py
     cd code/
     ```
+    ```py
+    python KB/ui_rdf.py
+    ```
 
 ***
 
