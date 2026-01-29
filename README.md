@@ -54,7 +54,7 @@
 
 All’avvio, il sistema presenta un menù principale testuale che permette di guidare l’utente in base alle funzionalità disponibili:
 
-<img align="center" src="immagini/Screenshot_menu_principale.png" width=430>
+<img align="center" src="docs/Screenshot_menu_principale.png" width=430>
 
 Le operazioni possibili sono:
 
